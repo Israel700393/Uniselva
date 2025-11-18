@@ -6,17 +6,74 @@ class UsuarioSystem {
         this.chamadoAtual = null;
         this.tema = localStorage.getItem('npd_tema') || 'light';
         
-        if (!this.usuarioAtual || this.usuarioAtual.tipo === 'admin') {
-            window.location.href = 'index.html';
+        // SEGURANÇA: Verificar autenticação e tipo de usuário
+        if (!this.verificarAutenticacao()) {
+            this.logout();
             return;
         }
         
+        // SEGURANÇA: Bloquear acesso de admin
+        if (this.usuarioAtual.tipo === 'admin') {
+            window.location.href = 'admin.html';
+            return;
+        }
+        
+        // SEGURANÇA: Proteger localStorage contra modificações
+        this.protegerDados();
+        
         this.init();
+    }
+
+    verificarAutenticacao() {
+        if (!this.usuarioAtual) return false;
+        
+        // Verificar se o usuário existe na lista de usuários
+        const usuarios = JSON.parse(localStorage.getItem('npd_usuarios')) || [];
+        const usuarioValido = usuarios.find(u => 
+            u.id === this.usuarioAtual.id && 
+            u.email === this.usuarioAtual.email &&
+            u.tipo === this.usuarioAtual.tipo
+        );
+        
+        return !!usuarioValido;
+    }
+
+    // Impedir navegação de volta após logout
+    impedirVoltarAposLogout() {
+        window.history.pushState(null, '', window.location.href);
+        window.onpopstate = () => {
+            // Se não há usuário logado, redirecionar
+            if (!localStorage.getItem('npd_usuario_atual')) {
+                window.location.replace('login.html');
+            } else {
+                window.history.pushState(null, '', window.location.href);
+            }
+        };
+    }
+
+    protegerDados() {
+        // SEGURANÇA: Monitorar mudanças no localStorage
+        const originalSetItem = localStorage.setItem;
+        localStorage.setItem = (key, value) => {
+            // Bloquear tentativas de alterar tipo de usuário
+            if (key === 'npd_usuario_atual') {
+                try {
+                    const dados = JSON.parse(value);
+                    if (dados.tipo !== this.usuarioAtual.tipo) {
+                        console.error('🚫 TENTATIVA DE ALTERAÇÃO BLOQUEADA!');
+                        this.logout();
+                        return;
+                    }
+                } catch (e) {}
+            }
+            originalSetItem.call(localStorage, key, value);
+        };
     }
 
     init() {
         this.aplicarTema();
         this.setupEventListeners();
+        this.impedirVoltarAposLogout();
         document.getElementById('userName').textContent = this.usuarioAtual.nome;
         this.carregarMeusChamados();
     }
@@ -76,8 +133,11 @@ class UsuarioSystem {
     }
 
     logout() {
+        // Limpar sessão completamente
         localStorage.removeItem('npd_usuario_atual');
-        window.location.href = 'index.html';
+        
+        // Limpar histórico para impedir voltar
+        window.location.replace('login.html');
     }
 
     navegar(view, btnElement) {
@@ -337,5 +397,3 @@ class UsuarioSystem {
 
 // Inicializar
 const usuario = new UsuarioSystem();
-
-
