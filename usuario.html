@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Chamados - Sistema NPD Uniselva</title>
+    <link rel="stylesheet" href="npd-chamados-uniselva.css">
+</head>
+<body data-theme="light">
+    <header class="main-header">
+        <div class="header-content">
+            <h1>🎓 Sistema de Chamados NPD</h1>
+            <div class="user-info">
+                <button id="btnThemeToggle" class="btn-theme" title="Alternar tema">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <span id="userName"></span>
+                <button id="btnLogout" class="btn-logout">Sair</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-view="meus-chamados">
+                    📋 Meus Chamados
+                </button>
+                <button class="nav-item" data-view="novo-chamado">
+                    ➕ Novo Chamado
+                </button>
+                <button class="nav-item" data-view="historico">
+                    📊 Histórico
+                </button>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <!-- Meus Chamados -->
+            <div id="viewMeusChamados" class="view active">
+                <h2>Meus Chamados</h2>
+                <div class="chamados-filters">
+                    <button class="filter-btn active" data-status="todos">Todos</button>
+                    <button class="filter-btn" data-status="aberto">Abertos</button>
+                    <button class="filter-btn" data-status="em_andamento">Em Andamento</button>
+                    <button class="filter-btn" data-status="resolvido">Resolvidos</button>
+                </div>
+                <div id="listaChamados" class="chamados-list"></div>
+            </div>
+
+            <!-- Novo Chamado -->
+            <div id="viewNovoChamado" class="view">
+                <h2>Abrir Novo Chamado</h2>
+                <form id="formNovoChamado" class="chamado-form">
+                    <div class="form-group">
+                        <label>Título do Chamado</label>
+                        <input type="text" id="chamadoTitulo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <select id="chamadoCategoria" required>
+                            <option value="">Selecione...</option>
+                            <option value="Suporte Técnico">Suporte Técnico</option>
+                            <option value="Dúvida">Dúvida</option>
+                            <option value="Problema">Problema</option>
+                            <option value="Solicitação">Solicitação</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição Detalhada</label>
+                        <textarea id="chamadoDescricao" rows="8" required></textarea>
+                    </div>
+                    <div class="form-info">
+                        <p>ℹ️ A prioridade do chamado será definida pela equipe NPD após análise.</p>
+                    </div>
+                    <button type="submit" class="btn-primary">Abrir Chamado</button>
+                </form>
+            </div>
+
+            <!-- Histórico -->
+            <div id="viewHistorico" class="view">
+                <h2>Histórico de Chamados</h2>
+                <div id="listaHistorico" class="chamados-list"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Detalhes do Chamado -->
+    <div id="modalChamado" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div class="modal-body">
+                <div class="modal-left">
+                    <div id="chamadoDetalhes"></div>
+                </div>
+                <div class="modal-right">
+                    <div class="chat-container">
+                        <div class="chat-header">
+                            <h3>💬 Chat do Chamado</h3>
+                            <span class="chat-status">Online</span>
+                        </div>
+                        <div id="chatMessages" class="chat-messages"></div>
+                        <form id="chatForm" class="chat-form">
+                            <input type="text" id="chatInput" placeholder="Digite sua mensagem..." required autocomplete="off">
+                            <button type="submit" class="btn-send">
+                                <span>📤</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast de Notificação -->
+    <div id="toast" class="toast"></div>
+
+    <script src="usuario.js"></script>
+</body>
+</html>
