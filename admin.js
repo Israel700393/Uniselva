@@ -45,7 +45,7 @@ class AdminSystem {
             if (!usuarioAtual || usuarioAtual.tipo !== 'admin') {
                 // Sem sessão válida: forçar permanência no login
                 window.history.pushState(null, '', window.location.href);
-                window.location.replace('login.html');
+                window.location.replace('index.html');
             } else {
                 // Com sessão: bloquear voltar
                 window.history.pushState(null, '', window.location.href);
@@ -1207,3 +1207,4 @@ class AdminSystem {
 
 // Inicializar
 const admin = new AdminSystem();
+
