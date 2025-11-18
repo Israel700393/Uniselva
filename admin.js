@@ -36,16 +36,29 @@ class AdminSystem {
 
     // Impedir navegação de volta após logout
     impedirVoltarAposLogout() {
+        // Adicionar estado ao histórico
         window.history.pushState(null, '', window.location.href);
-        window.onpopstate = () => {
-            // Se não há usuário logado ou não é admin, redirecionar
+        
+        // Interceptar tentativas de voltar
+        window.addEventListener('popstate', function(event) {
             const usuarioAtual = JSON.parse(localStorage.getItem('npd_usuario_atual'));
             if (!usuarioAtual || usuarioAtual.tipo !== 'admin') {
+                // Sem sessão válida: forçar permanência no login
+                window.history.pushState(null, '', window.location.href);
                 window.location.replace('login.html');
             } else {
+                // Com sessão: bloquear voltar
                 window.history.pushState(null, '', window.location.href);
             }
-        };
+        });
+        
+        // Bloquear também o evento beforeunload
+        window.addEventListener('beforeunload', function(event) {
+            const usuarioAtual = JSON.parse(localStorage.getItem('npd_usuario_atual'));
+            if (!usuarioAtual || usuarioAtual.tipo !== 'admin') {
+                window.history.pushState(null, '', window.location.href);
+            }
+        });
     }
 
     protegerDadosAdmin() {
@@ -144,8 +157,13 @@ class AdminSystem {
         // Limpar sessão completamente
         localStorage.removeItem('npd_usuario_atual');
         
-        // Limpar histórico para impedir voltar
-        window.location.replace('login.html');
+        // Limpar todo o histórico
+        window.history.go(-(window.history.length - 1));
+        
+        // Aguardar um momento e redirecionar
+        setTimeout(() => {
+            window.location.replace('login.html');
+        }, 100);
     }
 
     navegar(view, btnElement) {
