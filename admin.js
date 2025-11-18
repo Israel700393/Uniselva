@@ -81,7 +81,7 @@ class AdminSystem {
 
     logout() {
         localStorage.removeItem('npd_usuario_atual');
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
     }
 
     navegar(view, btnElement) {
@@ -1004,4 +1004,5 @@ class AdminSystem {
 
 // Inicializar
 const admin = new AdminSystem();
+
 
