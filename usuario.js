@@ -77,7 +77,7 @@ class UsuarioSystem {
 
     logout() {
         localStorage.removeItem('npd_usuario_atual');
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
     }
 
     navegar(view, btnElement) {
@@ -337,4 +337,5 @@ class UsuarioSystem {
 
 // Inicializar
 const usuario = new UsuarioSystem();
+
 
