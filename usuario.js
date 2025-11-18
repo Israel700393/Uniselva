@@ -7,7 +7,7 @@ class UsuarioSystem {
         this.tema = localStorage.getItem('npd_tema') || 'light';
         
         if (!this.usuarioAtual || this.usuarioAtual.tipo === 'admin') {
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
             return;
         }
         
@@ -337,3 +337,4 @@ class UsuarioSystem {
 
 // Inicializar
 const usuario = new UsuarioSystem();
+
