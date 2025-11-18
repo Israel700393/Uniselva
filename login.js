@@ -25,6 +25,7 @@ class LoginSystem {
         this.aplicarTema();
         this.setupEventListeners();
         this.verificarSessao();
+        this.impedirVoltarAposLogin();
     }
 
     aplicarTema() {
@@ -43,9 +44,21 @@ class LoginSystem {
     verificarSessao() {
         const usuarioAtual = JSON.parse(localStorage.getItem('npd_usuario_atual'));
         if (usuarioAtual) {
-            // Já está logado, redirecionar
-            this.redirecionarUsuario(usuarioAtual);
+            // Já está logado, redirecionar usando replace para limpar histórico
+            if (usuarioAtual.tipo === 'admin') {
+                window.location.replace('admin.html');
+            } else {
+                window.location.replace('usuario.html');
+            }
         }
+    }
+
+    // Impedir navegação de volta para login após autenticação
+    impedirVoltarAposLogin() {
+        window.history.pushState(null, '', window.location.href);
+        window.onpopstate = () => {
+            window.history.pushState(null, '', window.location.href);
+        };
     }
 
     fazerLogin() {
@@ -66,10 +79,11 @@ class LoginSystem {
     }
 
     redirecionarUsuario(usuario) {
+        // Usar replace para limpar histórico e impedir voltar
         if (usuario.tipo === 'admin') {
-            window.location.href = 'admin.html';
+            window.location.replace('admin.html');
         } else {
-            window.location.href = 'usuario.html';
+            window.location.replace('usuario.html');
         }
     }
 
