@@ -8,7 +8,7 @@ class UsuarioSystem {
         
         // SEGURANÇA: Verificar autenticação e tipo de usuário
         if (!this.verificarAutenticacao()) {
-            window.location.replace('login.html');
+            window.location.replace('index.html');
             return;
         }
         
@@ -406,3 +406,4 @@ class UsuarioSystem {
 
 // Inicializar
 const usuario = new UsuarioSystem();
+
