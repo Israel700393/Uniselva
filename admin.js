@@ -8,17 +8,72 @@ class AdminSystem {
         this.periodoRelatorio = 'semanal';
         this.tema = localStorage.getItem('npd_tema') || 'light';
         
-        if (!this.usuarioAtual || this.usuarioAtual.tipo !== 'admin') {
-            window.location.href = 'index.html';
+        // SEGURANÇA: Verificar autenticação e permissões de admin
+        if (!this.verificarAutenticacaoAdmin()) {
+            this.logout();
             return;
         }
         
+        // SEGURANÇA: Proteger dados contra modificações não autorizadas
+        this.protegerDadosAdmin();
+        
         this.init();
+    }
+
+    verificarAutenticacaoAdmin() {
+        if (!this.usuarioAtual) return false;
+        if (this.usuarioAtual.tipo !== 'admin') return false;
+        
+        // Verificar se o admin existe na lista de usuários
+        const usuarioValido = this.usuarios.find(u => 
+            u.id === this.usuarioAtual.id && 
+            u.email === this.usuarioAtual.email &&
+            u.tipo === 'admin'
+        );
+        
+        return !!usuarioValido;
+    }
+
+    // Impedir navegação de volta após logout
+    impedirVoltarAposLogout() {
+        window.history.pushState(null, '', window.location.href);
+        window.onpopstate = () => {
+            // Se não há usuário logado ou não é admin, redirecionar
+            const usuarioAtual = JSON.parse(localStorage.getItem('npd_usuario_atual'));
+            if (!usuarioAtual || usuarioAtual.tipo !== 'admin') {
+                window.location.replace('login.html');
+            } else {
+                window.history.pushState(null, '', window.location.href);
+            }
+        };
+    }
+
+    protegerDadosAdmin() {
+        // SEGURANÇA: Monitorar tentativas de modificação
+        const self = this;
+        const originalSetItem = localStorage.setItem;
+        
+        localStorage.setItem = function(key, value) {
+            // Validar modificações em dados críticos
+            if (key === 'npd_usuarios') {
+                try {
+                    const usuarios = JSON.parse(value);
+                    // Garantir que sempre existe pelo menos um admin
+                    const temAdmin = usuarios.some(u => u.tipo === 'admin');
+                    if (!temAdmin) {
+                        console.error('🚫 BLOQUEADO: Tentativa de remover todos os admins!');
+                        return;
+                    }
+                } catch (e) {}
+            }
+            originalSetItem.call(localStorage, key, value);
+        };
     }
 
     init() {
         this.aplicarTema();
         this.setupEventListeners();
+        this.impedirVoltarAposLogout();
         document.getElementById('adminName').textContent = this.usuarioAtual.nome;
         this.carregarDashboard();
     }
@@ -66,6 +121,12 @@ class AdminSystem {
             this.cadastrarUsuarioAdmin();
         });
 
+        // Editar Usuário
+        document.getElementById('formEditUser').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.salvarEdicaoUsuario();
+        });
+
         // Chat
         document.getElementById('chatForm').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -80,8 +141,11 @@ class AdminSystem {
     }
 
     logout() {
+        // Limpar sessão completamente
         localStorage.removeItem('npd_usuario_atual');
-        window.location.href = 'index.html';
+        
+        // Limpar histórico para impedir voltar
+        window.location.replace('login.html');
     }
 
     navegar(view, btnElement) {
@@ -452,6 +516,8 @@ class AdminSystem {
 
         container.innerHTML = todosUsuarios.map(usuario => {
             const chamadosUsuario = this.chamados.filter(c => c.usuarioId === usuario.id);
+            const podeExcluir = usuario.tipo !== 'admin' || this.usuarios.filter(u => u.tipo === 'admin').length > 1;
+            
             return `
                 <div class="usuario-card">
                     <div class="usuario-info">
@@ -467,13 +533,132 @@ class AdminSystem {
                         <p style="font-weight: 700; color: var(--primary); font-size: 1.5rem;">
                             ${chamadosUsuario.length}
                         </p>
-                        <p style="color: var(--text-secondary); font-size: 0.875rem;">
+                        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">
                             ${chamadosUsuario.length === 1 ? 'chamado' : 'chamados'}
                         </p>
+                        <div class="usuario-actions">
+                            <button class="btn-edit-user" onclick="admin.abrirModalEditUser(${usuario.id})" title="Editar usuário">
+                                ✏️
+                            </button>
+                            ${podeExcluir ? `
+                                <button class="btn-delete-user" onclick="admin.confirmarExclusaoUsuario(${usuario.id})" title="Excluir usuário">
+                                    🗑️
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             `;
         }).join('');
+    }
+
+    abrirModalEditUser(userId) {
+        const usuario = this.usuarios.find(u => u.id === userId);
+        if (!usuario) return;
+
+        document.getElementById('editUserId').value = usuario.id;
+        document.getElementById('editUserNome').value = usuario.nome;
+        document.getElementById('editUserEmail').value = usuario.email;
+        document.getElementById('editUserSenha').value = '';
+        document.getElementById('editUserSetor').value = usuario.setor;
+        document.getElementById('editUserTipo').value = usuario.tipo;
+
+        document.getElementById('modalEditUser').classList.add('active');
+    }
+
+    fecharModalEditUser() {
+        document.getElementById('modalEditUser').classList.remove('active');
+        document.getElementById('formEditUser').reset();
+    }
+
+    salvarEdicaoUsuario() {
+        const userId = parseInt(document.getElementById('editUserId').value);
+        const nome = document.getElementById('editUserNome').value.trim();
+        const email = document.getElementById('editUserEmail').value.trim();
+        const novaSenha = document.getElementById('editUserSenha').value;
+        const setor = document.getElementById('editUserSetor').value;
+        const tipo = document.getElementById('editUserTipo').value;
+
+        if (!nome || !email || !setor || !tipo) {
+            this.mostrarToast('❌ Por favor, preencha todos os campos!', 'error');
+            return;
+        }
+
+        // SEGURANÇA: Verificar se email já existe em outro usuário
+        const emailExiste = this.usuarios.find(u => u.email === email && u.id !== userId);
+        if (emailExiste) {
+            this.mostrarToast('❌ Este email já está cadastrado!', 'error');
+            return;
+        }
+
+        // SEGURANÇA: Não permitir remover o último admin
+        const usuario = this.usuarios.find(u => u.id === userId);
+        if (usuario.tipo === 'admin' && tipo !== 'admin') {
+            const adminsRestantes = this.usuarios.filter(u => u.tipo === 'admin' && u.id !== userId);
+            if (adminsRestantes.length === 0) {
+                this.mostrarToast('❌ Não é possível remover o último administrador!', 'error');
+                return;
+            }
+        }
+
+        // Atualizar usuário
+        const index = this.usuarios.findIndex(u => u.id === userId);
+        if (index !== -1) {
+            this.usuarios[index].nome = nome;
+            this.usuarios[index].email = email;
+            if (novaSenha) {
+                this.usuarios[index].senha = novaSenha;
+            }
+            this.usuarios[index].setor = setor;
+            this.usuarios[index].tipo = tipo;
+
+            this.salvarUsuarios();
+            this.mostrarToast('✅ Usuário atualizado com sucesso!', 'success');
+            this.fecharModalEditUser();
+            this.carregarUsuarios();
+        }
+    }
+
+    confirmarExclusaoUsuario(userId) {
+        const usuario = this.usuarios.find(u => u.id === userId);
+        if (!usuario) return;
+
+        // SEGURANÇA: Não permitir excluir o último admin
+        if (usuario.tipo === 'admin') {
+            const adminsRestantes = this.usuarios.filter(u => u.tipo === 'admin' && u.id !== userId);
+            if (adminsRestantes.length === 0) {
+                this.mostrarToast('❌ Não é possível excluir o último administrador!', 'error');
+                return;
+            }
+        }
+
+        const confirmar = confirm(
+            `⚠️ ATENÇÃO!\n\n` +
+            `Deseja realmente excluir o usuário?\n\n` +
+            `Nome: ${usuario.nome}\n` +
+            `Email: ${usuario.email}\n\n` +
+            `Esta ação não pode ser desfeita!`
+        );
+
+        if (confirmar) {
+            this.excluirUsuario(userId);
+        }
+    }
+
+    excluirUsuario(userId) {
+        const usuario = this.usuarios.find(u => u.id === userId);
+        if (!usuario) return;
+
+        // Remover usuário
+        this.usuarios = this.usuarios.filter(u => u.id !== userId);
+        this.salvarUsuarios();
+
+        // Remover chamados do usuário (opcional - você pode querer manter o histórico)
+        // this.chamados = this.chamados.filter(c => c.usuarioId !== userId);
+        // this.salvarChamados();
+
+        this.mostrarToast(`✅ Usuário ${usuario.nome} excluído com sucesso!`, 'success');
+        this.carregarUsuarios();
     }
 
 
@@ -1004,5 +1189,3 @@ class AdminSystem {
 
 // Inicializar
 const admin = new AdminSystem();
-
-
