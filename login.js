@@ -23,9 +23,19 @@ class LoginSystem {
 
     init() {
         this.aplicarTema();
+        this.limparHistoricoSeNecessario();
         this.setupEventListeners();
         this.verificarSessao();
         this.impedirVoltarAposLogin();
+    }
+
+    limparHistoricoSeNecessario() {
+        // Se não há sessão, limpar histórico
+        const usuarioAtual = localStorage.getItem('npd_usuario_atual');
+        if (!usuarioAtual && window.history.length > 1) {
+            // Limpar histórico
+            window.history.go(-(window.history.length - 1));
+        }
     }
 
     aplicarTema() {
@@ -55,10 +65,17 @@ class LoginSystem {
 
     // Impedir navegação de volta para login após autenticação
     impedirVoltarAposLogin() {
+        // Limpar todo o histórico anterior
+        if (window.history.length > 1) {
+            window.history.go(-(window.history.length - 1));
+        }
+        
+        // Adicionar estado e bloquear voltar
         window.history.pushState(null, '', window.location.href);
-        window.onpopstate = () => {
+        
+        window.addEventListener('popstate', function(event) {
             window.history.pushState(null, '', window.location.href);
-        };
+        });
     }
 
     fazerLogin() {
