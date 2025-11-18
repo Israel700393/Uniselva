@@ -146,7 +146,7 @@ class UsuarioSystem {
         localStorage.removeItem('npd_usuario_atual');
         
         // Redirecionar imediatamente
-        window.location.replace('login.html');
+        window.location.replace('index.html');
     }
 
     navegar(view, btnElement) {
@@ -406,4 +406,5 @@ class UsuarioSystem {
 
 // Inicializar
 const usuario = new UsuarioSystem();
+
 
